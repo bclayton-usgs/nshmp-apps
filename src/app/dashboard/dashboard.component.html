@@ -1,0 +1,10 @@
+<div class="grid-container">
+
+  <mat-card
+      *ngFor="let app of dashboardList"
+      [routerLink]="app.routerLink"
+      class="grid-col-12 mobile-lg:grid-col-6 mobile-lg:grid-offset-3">
+    <mat-card-title>{{ app.display }}</mat-card-title>
+  </mat-card>
+
+</div>

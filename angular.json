@@ -24,7 +24,22 @@
             "tsConfig": "src/tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/@nshmp/nshmp-ng-template/assets",
+                "output": "./assets"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/uswds/dist/img",
+                "output": "./assets/uswds"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/uswds/dist/fonts",
+                "output": "~uswds/dist/fonts"
+              }
             ],
             "styles": [
               "src/styles.scss"
