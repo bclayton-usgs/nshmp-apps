@@ -9,7 +9,7 @@ import { NavigationListService } from './shared/navigation-list.service';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
-  title = 'nshmp-haz-web-apps';
+  title = 'nshmp-apps';
 
   navigationList: Navigation[];
 
