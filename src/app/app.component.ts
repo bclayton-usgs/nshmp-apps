@@ -9,7 +9,7 @@ import { Navigation, NavigationService } from '@nshmp/nshmp-ng-template';
 export class AppComponent implements OnInit {
   title = 'nshmp-apps';
 
-  private navigationList: Navigation[] = [
+  navigationList: Navigation[] = [
     {
       display: 'Dashboard',
       routerLink: ''
