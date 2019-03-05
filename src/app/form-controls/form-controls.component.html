@@ -1,0 +1,34 @@
+<!-- Form controls -->
+<ng-container
+    *ngFor="let el of formControls"
+    [ngSwitch]="el.formType"
+    [formGroup]="formGroup">
+
+    <!-- Form input field -->
+    <mat-form-field
+        *ngSwitchCase="'input'"
+        appearance="standard"
+        [ngClass]="el.formClass">
+      <mat-label>{{ el.label }}</mat-label>
+      <mat-hint *ngIf="el.formFieldHint">{{ el.formFieldHint }}</mat-hint>
+      <input
+          [formControlName]="el.name"
+          matInput
+          [matTooltip]="el.tooltip"
+          matTooltipPosition="above"
+          [name]="el.name"
+          [step]="el.step"
+          [type]="el.type">
+    </mat-form-field>
+
+    <!-- Form toogle -->
+    <mat-slide-toggle
+        *ngSwitchCase="'toggle'"
+        color="primary"
+        [formControlName]="el.name"
+        [name]="el.name"
+        [ngClass]="el.formClass">
+      {{ el.label }}
+    </mat-slide-toggle>
+
+</ng-container>
