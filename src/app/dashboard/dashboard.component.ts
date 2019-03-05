@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { Navigation } from '@nshmp/nshmp-ng-template';
 
-import { NavigationListService } from '../shared/navigation-list.service';
+import { Component, OnInit } from '@angular/core';
+import { Navigation, NavigationService } from '@nshmp/nshmp-ng-template';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,10 +11,10 @@ export class DashboardComponent implements OnInit {
 
   dashboardList: Navigation[];
 
-  constructor(private navListService: NavigationListService) { }
+  constructor(private navigationService: NavigationService) { }
 
   ngOnInit() {
-    this.dashboardList = this.navListService.getNavList().filter(nav => nav.display !== 'Dashboard');
+    this.dashboardList = this.navigationService.get().filter(nav => nav.display !== 'Dashboard');
   }
 
 }

@@ -1,7 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Navigation } from '@nshmp/nshmp-ng-template';
-
-import { NavigationListService } from './shared/navigation-list.service';
+import { Navigation, NavigationService } from '@nshmp/nshmp-ng-template';
 
 @Component({
   selector: 'app-root',
@@ -11,12 +9,20 @@ import { NavigationListService } from './shared/navigation-list.service';
 export class AppComponent implements OnInit {
   title = 'nshmp-apps';
 
-  navigationList: Navigation[];
+  private navigationList: Navigation[] = [
+    {
+      display: 'Dashboard',
+      routerLink: ''
+    }, {
+      display: 'Exceedance Explorer',
+      routerLink: 'exceedance-explorer'
+    }
+  ];
 
-  constructor(private navListService: NavigationListService) {}
+  constructor(private navigationService: NavigationService) {}
 
   ngOnInit() {
-    this.navigationList = this.navListService.getNavList();
+    this.navigationService.set(this.navigationList);
   }
 
 }
