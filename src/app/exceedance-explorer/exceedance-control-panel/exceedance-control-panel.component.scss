@@ -1,0 +1,14 @@
+@import '~@nshmp/nshmp-ng-template/scss/uswds-functions';
+
+.add-button {
+  margin-right: 1em;
+}
+
+.remove-button {
+  @include u-text('white');
+  @include u-bg('accent-warm');
+}
+
+.clear-button {
+  margin-left: 1em;
+}

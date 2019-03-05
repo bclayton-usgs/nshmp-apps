@@ -1,0 +1,44 @@
+<!-- Exceedance explorer control panel -->
+<form [formGroup]="exceedanceForm" (ngSubmit)="onAddPlot()" id="exceedance-form">
+  <app-form-controls
+      [formGroup]="exceedanceForm"
+      [formControls]="exceedanceFormControls">
+  </app-form-controls>
+</form>
+
+<!-- Buttons -->
+<div class="grid-row margin-y-2">
+
+  <!-- Add plot -->
+  <button
+      class="grid-col-3 add-button"
+      color="primary"
+      [disabled]="!exceedanceForm.valid"
+      form="exceedance-form"
+      mat-raised-button
+      type="submit">
+    Add
+  </button>
+
+  <!-- Remove selected plot -->
+  <button
+      (click)="onRemovePlot()"
+      class="grid-col remove-button"
+      [disabled]="!hasSelected"
+      mat-raised-button
+      type="button">
+    Remove Selected
+  </button>
+
+  <!-- Clear plot -->
+  <button
+      class="grid-col-3 clear-button"
+      (click)="onClearPlot()"
+      color="warn"
+      [disabled]="!hasPlot"
+      mat-raised-button
+      type="button">
+    Clear
+  </button>
+
+</div>
