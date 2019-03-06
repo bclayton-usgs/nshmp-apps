@@ -258,6 +258,7 @@ export class ExceedancePlotComponent implements OnInit, OnDestroy {
   onPlotSelection(selectedData: D3LineSeriesData) {
     if (!selectedData) {
       this.exceedancePlotService.hasSelectedNext(false);
+      return;
     }
 
     Preconditions.checkArgumentInstanceOf(selectedData, D3LineSeriesData);
