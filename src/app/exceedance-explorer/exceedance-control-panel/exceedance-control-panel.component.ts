@@ -6,6 +6,7 @@ import { FormControls } from '../../form-controls/form-controls.model';
 import { ExceedanceExplorer } from '../exceedance-explorer.model';
 import { ExceedanceControlPanelService } from './exceedance-control-panel.service';
 import { ExceedancePlotService } from '../exceedance-plot/exceedance-plot.service';
+import { FormControlsService } from 'src/app/form-controls/form-controls.service';
 
 @Component({
   selector: 'app-exceedance-control-panel',
@@ -65,47 +66,47 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
   /** Exceedance form controls */
   exceedanceFormControls: FormControls[] = [
     {
-      formClass: 'grid-col-8',
+      error: `[${this.formBounds.median.min}, ${this.formBounds.median.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
       formType: 'input',
-      label: 'Median (g):',
+      label: 'Median (g)',
       name: 'median',
       step: this.formBounds.median.step,
-      tooltip: `[${this.formBounds.median.min}, ${this.formBounds.median.max}]`,
       type: 'number'
     }, {
-      formClass: 'grid-col-8',
+      error: `[${this.formBounds.sigma.min}, ${this.formBounds.sigma.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
       formType: 'input',
-      label: 'Sigma (natural log units):',
+      label: 'Sigma (natural log units)',
       name: 'sigma',
       step: this.formBounds.sigma.step,
-      tooltip: `[${this.formBounds.sigma.min}, ${this.formBounds.sigma.max}]`,
       type: 'number'
     }, {
-      formClass: 'grid-col-8',
+      error: `[${this.formBounds.rate.min}, ${this.formBounds.rate.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
       formType: 'input',
-      label: 'Annual Rate:',
+      label: 'Annual Rate',
       name: 'rate',
       step: this.formBounds.rate.step,
-      tooltip: `[${this.formBounds.rate.min}, ${this.formBounds.rate.max}]`,
       type: 'number'
     }, {
-      formClass: 'grid-col-8',
+      formClass: 'grid-col-8 margin-bottom-3',
       formType: 'toggle',
       label: 'Truncation',
       name: 'truncation'
     }, {
-      formClass: 'grid-col-8',
+      error: `[${this.formBounds.truncationLevel.min}, ${this.formBounds.truncationLevel.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
       formType: 'input',
       label: 'Truncation Level (n)',
       name: 'truncationLevel',
       step: this.formBounds.truncationLevel.step,
-      tooltip: `[${this.formBounds.truncationLevel.min}, ${this.formBounds.truncationLevel.max}]`,
       type: 'number'
     }
   ];
 
   /** Exceedance reactive forms */
-  exceedanceForm = this.formBuild.group({
+  exceedanceForm = this.formBuilder.group({
     median: [
       this.defaultValues.median,
       this.getNumberValidators(this.formBounds.median)
@@ -126,9 +127,10 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
   });
 
   constructor(
-      private formBuild: FormBuilder,
+      private formBuilder: FormBuilder,
       private controlPanelService: ExceedanceControlPanelService,
-      private exceedancePlotService: ExceedancePlotService) { }
+      private exceedancePlotService: ExceedancePlotService,
+      private formControlsService: FormControlsService) { }
 
   ngOnInit() {
     this.truncationSubscription = this.exceedanceForm.get('truncation').valueChanges
@@ -145,6 +147,8 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
 
     this.hasSelectedSubscription = this.exceedancePlotService.hasSelectedObserve()
         .subscribe(hasSelected => this.hasSelected = hasSelected);
+
+    this.formControlsService.markAllAsTouched(this.exceedanceForm);
   }
 
   ngOnDestroy() {

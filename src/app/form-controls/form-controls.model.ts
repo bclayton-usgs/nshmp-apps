@@ -4,6 +4,9 @@
  */
 export interface FormControls {
 
+  /** An error to show underneath form */
+  error?: string;
+
   /** Any class to apply */
   formClass?: string;
 
@@ -25,7 +28,11 @@ export interface FormControls {
   /** The step for input field */
   step?: number;
 
+  /** Tooltip to show */
   tooltip?: string;
+
+  /** The tooltip position */
+  tooltipPosition?: string;
 
   /** Input field type */
   type?: string;
