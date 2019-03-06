@@ -5,3 +5,28 @@
 
 /* Import nshmp d3 scss */
 @import '~@nshmp/nshmp-d3/scss/nshmp-d3.scss';
+
+/* Angular material form field extra small size */
+.form-field-xs .mat-form-field-infix {
+  padding: 0.1em 0;
+}
+
+/* Angular material form field small size */
+.form-field-sm .mat-form-field-infix {
+  padding: 0.25em 0;
+}
+
+/* Angular material form field medium size */
+.form-field-md .mat-form-field-infix {
+  padding: 0.5em 0;
+}
+
+/* Angular material form field large size */
+.form-field-lg .mat-form-field-infix {
+  padding: 0.75em 0;
+}
+
+/* Angular material form field extra large size */
+.form-field-xl .mat-form-field-infix {
+  padding: 1em 0;
+}
