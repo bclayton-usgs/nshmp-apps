@@ -1,16 +1,13 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { ExceedanceExplorerComponent } from './exceedance-explorer/exceedance-explorer.component';
-
 const routes: Routes = [
   {
     path: '',
-    component: DashboardComponent
+    loadChildren: './dashboard/dashboard.module#DashboardModule'
   }, {
     path: 'exceedance-explorer',
-    component: ExceedanceExplorerComponent
+    loadChildren: './exceedance-explorer/exceedance-explorer.module#ExceedanceExplorerModule'
   }, {
     path: '**',
     redirectTo: ''
@@ -19,6 +16,6 @@ const routes: Routes = [
 
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  exports: [RouterModule],
 })
 export class AppRoutingModule { }
