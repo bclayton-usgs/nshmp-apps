@@ -13,7 +13,6 @@ export class FormControlsService {
    */
   markAllAsTouched(formGroup: FormGroup): void {
     for (const control of Object.values(formGroup.controls)) {
-      console.log(control);
       if (control.hasOwnProperty('controls')) {
         this.markAllAsTouched(control as FormGroup);
       } else {
