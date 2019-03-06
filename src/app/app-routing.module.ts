@@ -13,7 +13,7 @@ const routes: Routes = [
     component: ExceedanceExplorerComponent
   }, {
     path: '**',
-    component: DashboardComponent
+    redirectTo: ''
   }
 ];
 
