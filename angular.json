@@ -33,7 +33,7 @@
               {
                 "glob": "**/*",
                 "input": "node_modules/uswds/dist/img",
-                "output": "./assets/uswds"
+                "output": "~uswds/dist/img"
               },
               {
                 "glob": "**/*",
