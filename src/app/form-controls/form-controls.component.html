@@ -7,15 +7,18 @@
     <!-- Form input field -->
     <mat-form-field
         *ngSwitchCase="'input'"
-        appearance="standard"
+        appearance="outline"
+        color="primary"
+        floatLabel="always"
         [ngClass]="el.formClass">
       <mat-label>{{ el.label }}</mat-label>
       <mat-hint *ngIf="el.formFieldHint">{{ el.formFieldHint }}</mat-hint>
+      <mat-error>{{ el.error }}</mat-error>
       <input
           [formControlName]="el.name"
           matInput
           [matTooltip]="el.tooltip"
-          matTooltipPosition="above"
+          matTooltipPosition="el.tooltipPosition"
           [name]="el.name"
           [step]="el.step"
           [type]="el.type">
