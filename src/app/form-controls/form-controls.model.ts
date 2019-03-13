@@ -1,3 +1,4 @@
+import { AbstractControl } from '@angular/forms';
 
 /**
  * Defines what are in a form control.
@@ -22,8 +23,20 @@ export interface FormControls {
   /** Select options */
   options?: SelectOptions[];
 
+  /** Select opt group */
+  optGroups?: SelectOptGroup[];
+
+  /** Minimum value */
+  min?: number;
+
+  /** Maximum value */
+  max?: number;
+
+  /** Multiple select */
+  multiple?: boolean;
+
   /** Form control name */
-  name: string;
+  formControlName: string;
 
   /** The step for input field */
   step?: number;
@@ -36,15 +49,29 @@ export interface FormControls {
 
   /** Input field type */
   type?: string;
+
+  /** Thumb label for slider */
+  thumbLabel?: boolean;
+
+  /** Form control to sync value to */
+  valueSync?: AbstractControl;
 }
 
 /** The form type */
-export type FormType = 'checkbox' | 'input' | 'radio' | 'select' | 'toggle';
+export type FormType = 'button-toggle' | 'checkbox' | 'input' | 'select' | 'slider' | 'toggle';
 
 /**
  * Select menu options.
  */
 export interface SelectOptions {
   value: any;
+  label: string;
+}
+
+/**
+ * Select opt groups
+ */
+export interface SelectOptGroup {
+  options: SelectOptions[];
   label: string;
 }
