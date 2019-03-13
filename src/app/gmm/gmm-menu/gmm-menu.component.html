@@ -1,0 +1,72 @@
+<!-- Ground motion model menu -->
+<ng-container [formGroup]="formGroup">
+
+  <!-- GMM sort toggles -->
+  <div class="clearfix">
+    <mat-button-toggle-group class="float-right">
+
+      <!-- Sort by group -->
+      <mat-button-toggle
+          aria-label="Sort ground motion models by group"
+          class="button-toggle-xs"
+          [checked]="isGmmGrouped"
+          (click)="isGmmGrouped = true"
+          matTooltip="Sort by Group"
+          matTooltipPosition="above">
+        <mat-icon class="mat-icon-18">list</mat-icon>
+      </mat-button-toggle>
+
+      <!-- Sort alphabetically-->
+      <mat-button-toggle
+          aria-label="Sort ground motion models alphabetically"
+          class="button-toggle-xs"
+          [checked]="!isGmmGrouped"
+          (click)="isGmmGrouped = false"
+          matTooltip="Sort Alphabetically"
+          matTooltipPosition="above">
+        <mat-icon class="mat-icon-18">sort_by_alpha</mat-icon>
+      </mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  <!-- Select menu -->
+  <mat-form-field
+      appearance="outline"
+      color="primary"
+      floatLabel="always"
+      [class]="gmmFormControl.formClass">
+    <mat-label>{{ gmmFormControl.label }}</mat-label>
+
+    <!-- GMMs -->
+    <select
+        [formControlName]="gmmFormControl.formControlName"
+        matNativeControl
+        size="16"
+        multiple="true">
+
+      <!-- Gouped GMMs -->
+      <ng-container *ngIf="isGmmGrouped; else alpha">
+        <optgroup
+            *ngFor="let optGroup of gmmGrouped"
+            [label]="optGroup.label">
+          <ng-container *ngTemplateOutlet="setGmms; context: optGroup" ></ng-container>
+        </optgroup>
+      </ng-container>
+
+      <!-- Alphabetized GMMs -->
+      <ng-container #alpha *ngTemplateOutlet="setGmms; context: {options: gmmAlpha}"></ng-container>
+
+    </select>
+
+  </mat-form-field>
+
+</ng-container>
+
+<!-- Set GMMs -->
+<ng-template #setGmms let-gmms="options">
+  <option
+      *ngFor="let option of gmms"
+      [value]="option.value">
+    {{ option.label }}
+  </option>
+</ng-template>
