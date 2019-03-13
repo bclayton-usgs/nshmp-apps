@@ -6,7 +6,7 @@ import { FormControls } from '../../form-controls/form-controls.model';
 import { ExceedanceExplorer } from '../exceedance-explorer.model';
 import { ExceedanceControlPanelService } from './exceedance-control-panel.service';
 import { ExceedancePlotService } from '../exceedance-plot/exceedance-plot.service';
-import { FormControlsService } from 'src/app/form-controls/form-controls.service';
+import { FormControlsService } from '../../form-controls/form-controls.service';
 
 @Component({
   selector: 'app-exceedance-control-panel',
@@ -68,38 +68,38 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
     {
       error: `[${this.formBounds.median.min}, ${this.formBounds.median.max}]`,
       formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'median',
       formType: 'input',
       label: 'Median (g)',
-      name: 'median',
       step: this.formBounds.median.step,
       type: 'number'
     }, {
       error: `[${this.formBounds.sigma.min}, ${this.formBounds.sigma.max}]`,
       formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'sigma',
       formType: 'input',
       label: 'Sigma (natural log units)',
-      name: 'sigma',
       step: this.formBounds.sigma.step,
       type: 'number'
     }, {
       error: `[${this.formBounds.rate.min}, ${this.formBounds.rate.max}]`,
       formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'rate',
       formType: 'input',
       label: 'Annual Rate',
-      name: 'rate',
       step: this.formBounds.rate.step,
       type: 'number'
     }, {
       formClass: 'grid-col-8 margin-bottom-3',
+      formControlName: 'truncation',
       formType: 'toggle',
       label: 'Truncation',
-      name: 'truncation'
     }, {
       error: `[${this.formBounds.truncationLevel.min}, ${this.formBounds.truncationLevel.max}]`,
       formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'truncationLevel',
       formType: 'input',
       label: 'Truncation Level (n)',
-      name: 'truncationLevel',
       step: this.formBounds.truncationLevel.step,
       type: 'number'
     }
