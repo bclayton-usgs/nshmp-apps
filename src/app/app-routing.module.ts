@@ -6,6 +6,9 @@ const routes: Routes = [
     path: '',
     loadChildren: './dashboard/dashboard.module#DashboardModule'
   }, {
+    path: 'response-spectra',
+    loadChildren: './gmm/response-spectra/response-spectra.module#ResponseSpectraModule'
+  }, {
     path: 'exceedance-explorer',
     loadChildren: './exceedance-explorer/exceedance-explorer.module#ExceedanceExplorerModule'
   }, {
