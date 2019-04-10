@@ -2,7 +2,7 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { NshmpControlPanelModule } from '@nshmp/nshmp-ng-template';
+import { NshmpControlPanelModule, NshmpFormFieldModule } from '@nshmp/nshmp-ng-template';
 
 import { FormControlsComponent } from '../form-controls/form-controls.component';
 import { MaterialModule } from './material.module';
@@ -19,6 +19,7 @@ import { GmmMenuComponent } from '../gmm/gmm-menu/gmm-menu.component';
     NshmpControlPanelModule,
     ReactiveFormsModule,
     HttpClientModule,
+    NshmpFormFieldModule
   ],
   exports: [
     FormControlsComponent,
@@ -26,7 +27,8 @@ import { GmmMenuComponent } from '../gmm/gmm-menu/gmm-menu.component';
     MaterialModule,
     NshmpControlPanelModule,
     ReactiveFormsModule,
-    HttpClientModule
+    HttpClientModule,
+    NshmpFormFieldModule
   ]
 })
 export class CoreModule { }

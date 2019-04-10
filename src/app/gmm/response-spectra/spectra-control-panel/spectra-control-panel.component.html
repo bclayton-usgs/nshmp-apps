@@ -8,22 +8,27 @@
   <!-- <app-control-panel-forms
       [formGroup]="spectraForm"
       [formFields]="spectraFormControls.multiValueParameters">
-  </app-control-panel-forms>
+  </app-control-panel-forms> -->
 
   <app-gmm-menu
       [formGroup]="spectraForm"
       [isGmmGrouped]="isGmmGrouped">
   </app-gmm-menu>
 
-  <app-control-panel-forms
-      formGroupName="eventParameters"
-      [formGroup]="spectraForm.controls.eventParameters"
-      [formFields]="spectraFormControls.eventParameters">
-  </app-control-panel-forms>
+  <!-- Event Parameters -->
+  <mat-label class="text-bold">Event Parameters:</mat-label>
+  <br>
+  <div class="indent-form">
+    <nshmp-template-form-field
+        formGroupName="eventParameters"
+        [formGroup]="spectraForm.controls.eventParameters"
+        [formFields]="spectraFormControls.eventFormFields">
+    </nshmp-template-form-field>
+  </div>
 
   <div formGroupName="sourceParameters"></div>
 
-  <div formGroupName="pathParameters"></div> -->
+  <div formGroupName="pathParameters"></div>
 
 </form>
 

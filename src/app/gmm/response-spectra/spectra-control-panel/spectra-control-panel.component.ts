@@ -2,14 +2,11 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Subscription, Observable } from 'rxjs';
-import { SpinnerService } from '@nshmp/nshmp-ng-template';
+import { SpinnerService, FormInput, FormSlider, FormButtonToggle, FormField } from '@nshmp/nshmp-ng-template';
 import { NshmpError, GmmUsage } from '@nshmp/nshmp-web-utils';
 
 import { FormControls } from '../../../form-controls/form-controls.model';
 import { GmmMenuService } from '../../gmm-menu/gmm-menu.service';
-import { FormSelect } from 'src/app/control-panel-forms/form-select/form-select.model';
-import { FormInput } from 'src/app/control-panel-forms/form-input/form-input.model';
-import { FormSlider } from 'src/app/control-panel-forms/form-slider/form-slider.model';
 
 
 @Component({
@@ -26,7 +23,7 @@ export class SpectraControlPanelComponent implements OnInit, OnDestroy {
   parameterSubscription: Subscription;
   parameterObservable: Observable<object>;
 
-  spectraFormControls: { [name: string]: FormControls[] };
+  spectraFormControls: { [name: string]: FormField[] };
 
   spectraForm: FormGroup;
 
@@ -42,7 +39,7 @@ export class SpectraControlPanelComponent implements OnInit, OnDestroy {
 
     this.parameterSubscription = this.parameterObservable.subscribe(response => {
           this.buildForm(response as GmmUsage);
-          this.buildFormControls(response as GmmUsage);
+          this.buildFormFields(response as GmmUsage);
         }, error => {
           NshmpError.throwError(error.message);
         });
@@ -65,7 +62,7 @@ export class SpectraControlPanelComponent implements OnInit, OnDestroy {
           MwSlider: [parameters.Mw.value],
           MwButtons: [],
           rake: [parameters.rake.value],
-          rakeSlide: [parameters.rake.value],
+          rakeSlider: [parameters.rake.value],
           rakeButtons: [],
           zHyp: [parameters.zHyp.value],
           centerDownDip: []
@@ -96,61 +93,100 @@ export class SpectraControlPanelComponent implements OnInit, OnDestroy {
       });
   }
 
-  buildFormControls(response: GmmUsage) {
+  buildFormFields(response: GmmUsage) {
+
+    const eventFormFields = this.eventFormFields(response);
+
+
+    this.spectraFormControls = {
+      eventFormFields
+    };
+  }
+
+  eventFormFields(response: GmmUsage): FormField[] {
     const parameters = response.parameters;
 
-    const multiValueParameters: FormSelect = {
-      formClass: 'margin-bttom-1 form-field-md grid-col-12',
-      formControlName: 'multiValueParameters',
-      formType: 'select',
-      label: 'Multi Value Parameter',
-      options: [
-        {
-          label: 'Ground Motion Models',
-          value: 'gmm'
-        }, {
-          label: 'Mw',
-          value: 'Mw'
-        }, {
-          label: 'Vs30',
-          value: 'vs30'
-        }
-      ]
-    };
-
     const Mw: FormInput = {
-      formClass: 'margin-bottom-1 form-field-sm grid-col-4',
+      formClass: 'grid-col-6 form-field-xs',
       formControlName: 'Mw',
       formType: 'input',
       label: 'Mw',
-      type: 'number',
       min: parameters.Mw.min,
       max: parameters.Mw.max,
-      valueSync: this.spectraForm.get('eventParameters').get('MwSlider'),
+      type: 'number',
+      valueSync: this.spectraForm.get('eventParameters').get('MwSlider')
     };
 
     const MwSlider: FormSlider = {
-      formClass: 'margin-bottom-1 grid-offset-2 grid-col-6',
+      formClass: 'grid-offset-1 grid-col-5 form-field-xs',
       formControlName: 'MwSlider',
       formType: 'slider',
-      label: 'Mw Slider',
+      label: '',
       min: parameters.Mw.min,
       max: parameters.Mw.max,
+      sliderClass: 'grid-col-12',
       thumbLabel: true,
       valueSync: this.spectraForm.get('eventParameters').get('Mw')
     };
 
-    this.spectraFormControls = {
-      multiValueParameters: [multiValueParameters],
-      eventParameters: [
-        Mw,
-        MwSlider
-      ]
+    const MwButtons: FormButtonToggle = {
+      buttons: [
+        {label: '4.0', value: 4.0},
+        {label: '4.5', value: 4.5},
+        {label: '5.0', value: 5.0},
+        {label: '5.5', value: 5.5},
+        {label: '6.0', value: 6.0},
+        {label: '6.5', value: 6.5},
+        {label: '7.0', value: 7.0},
+        {label: '7.5', value: 7.5},
+        {label: '8.0', value: 8.0},
+        {label: '8.5', value: 8.5},
+      ],
+      formClass: 'grid-col-12',
+      formControlName: 'MwButtons',
+      formType: 'button-toggle',
+      label: '',
     };
+
+    const rake: FormInput = {
+      formClass: 'margin-top-4 grid-col-6 form-field-xs',
+      formControlName: 'rake',
+      formType: 'input',
+      label: 'Rake',
+      min: parameters.rake.min,
+      max: parameters.rake.max,
+      type: 'number',
+      valueSync: this.spectraForm.get('eventParameters').get('rakeSlider')
+    };
+
+    const rakeSlider: FormSlider = {
+      formClass: 'grid-offset-1 grid-col-5 form-field-xs',
+      formControlName: 'rakeSlider',
+      formType: 'slider',
+      label: '',
+      min: parameters.rake.min,
+      max: parameters.rake.max,
+      sliderClass: 'grid-col-12',
+      thumbLabel: true,
+      valueSync: this.spectraForm.get('eventParameters').get('rake')
+    };
+
+    const rakeButtons: FormButtonToggle = {
+      buttons: [
+        {label: 'Strike-Slip', value: 0},
+        {label: 'Normal', value: -90},
+        {label: 'Reverse', value: 90},
+      ],
+      formClass: 'grid-col-12',
+      formControlName: 'rakeButtons',
+      formType: 'button-toggle',
+      label: '',
+    };
+
+    return [Mw, MwSlider, MwButtons, rake, rakeSlider, rakeButtons];
   }
 
   onPlot() {
-    console.log(this.spectraForm);
   }
 
 }
