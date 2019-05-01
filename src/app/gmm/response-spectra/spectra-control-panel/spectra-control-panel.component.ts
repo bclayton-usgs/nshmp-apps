@@ -7,6 +7,7 @@ import { NshmpError, GmmUsage } from '@nshmp/nshmp-web-utils';
 
 import { FormControls } from '../../../form-controls/form-controls.model';
 import { GmmMenuService } from '../../gmm-menu/gmm-menu.service';
+import { normalizePassiveListenerOptions } from '@angular/cdk/platform';
 
 
 @Component({
@@ -155,6 +156,7 @@ export class SpectraControlPanelComponent implements OnInit, OnDestroy {
       label: 'Rake',
       min: parameters.rake.min,
       max: parameters.rake.max,
+      suffix: '°',
       type: 'number',
       valueSync: this.spectraForm.get('eventParameters').get('rakeSlider')
     };
@@ -184,6 +186,20 @@ export class SpectraControlPanelComponent implements OnInit, OnDestroy {
     };
 
     return [Mw, MwSlider, MwButtons, rake, rakeSlider, rakeButtons];
+  }
+
+  sourceParametersFormFields(response: GmmUsage): FormField[] {
+    const parameters = response.parameters;
+
+    return null;
+  }
+
+  pathParametersFormFields() {
+
+  }
+
+  siteBasinFormFields() {
+
   }
 
   onPlot() {
