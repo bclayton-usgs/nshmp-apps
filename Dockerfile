@@ -88,6 +88,9 @@ WORKDIR ${DOCUMENT_ROOT}
 # Copy distribution bundle from builder image
 COPY --from=builder ${BUILDER_WORKDIR}/dist/${PROJECT} ${BASE_HREF}
 
+# Expose port
+EXPOSE 8080
+
 # Remove default config files and create a new one
 RUN rm -rf ${NGINX_CONF_DIR}/*.conf \
   && /bin/bash /hooks/nginx-conf.sh
