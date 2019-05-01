@@ -67,7 +67,7 @@ ENV BASE_HREF=${BASE_HREF}
 ENV NGINX_CONF_DIR=/etc/nginx/default.d
 
 # Copy hooks to container
-COPY hooks /hooks
+COPY docker-nginx /hooks
 
 # Set user to root
 USER root
@@ -90,4 +90,4 @@ COPY --from=builder ${BUILDER_WORKDIR}/dist/${PROJECT} ${BASE_HREF}
 
 # Remove default config files and create a new one
 RUN rm -rf ${NGINX_CONF_DIR}/*.conf \
-  && /bin/bash /hooks/nginx-hook.sh
+  && /bin/bash /hooks/nginx-conf.sh
