@@ -45,19 +45,20 @@
         multiple="true">
 
       <!-- Gouped GMMs -->
-      <ng-container *ngIf="isGmmGrouped; else alpha">
+      <ng-container *ngIf="isGmmGrouped; else alphaGmm">
         <optgroup
             *ngFor="let optGroup of gmmGrouped"
             [label]="optGroup.label">
-          <ng-container *ngTemplateOutlet="setGmms; context: optGroup" ></ng-container>
+          <ng-container *ngTemplateOutlet="setGmms; context: optGroup"></ng-container>
         </optgroup>
       </ng-container>
 
       <!-- Alphabetized GMMs -->
-      <ng-container #alpha *ngTemplateOutlet="setGmms; context: {options: gmmAlpha}"></ng-container>
+      <ng-template #alphaGmm>
+        <ng-container *ngTemplateOutlet="setGmms; context: {options: gmmAlpha}"></ng-container>
+      </ng-template>
 
     </select>
-
   </mat-form-field>
 
 </ng-container>
