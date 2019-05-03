@@ -3,8 +3,8 @@ import { FormGroup } from '@angular/forms';
 import { GmmUsageParameters } from '@nshmp/nshmp-web-utils';
 import { Subscription } from 'rxjs';
 
-import { FormControls, SelectOptGroup, SelectOptions } from '../../form-controls/form-controls.model';
 import { GmmMenuService } from './gmm-menu.service';
+import { FormField, SelectOptGroup, SelectOptions } from '@nshmp/nshmp-ng-template';
 
 @Component({
   selector: 'app-gmm-menu',
@@ -19,7 +19,7 @@ export class GmmMenuComponent implements OnInit {
   /** Whether the GMMs are sourted by group or alphabetized */
   @Input() isGmmGrouped: boolean;
 
-  gmmFormControl: FormControls = {
+  gmmFormControl: FormField = {
     formClass: 'form-field-md grid-col-12',
     formControlName: 'gmm',
     formType: 'select',
