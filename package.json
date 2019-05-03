@@ -7,7 +7,7 @@
     "build": "ng build",
     "build-prod": "ng build --prod --base-href=/nshmp/",
     "build-tomcat": "npm run build-prod && npm run cp-tomcat-dir && npm run make-war",
-    "make-war": "cd dist/nshmp-apps && jar cvf nshmp-apps.war . && mv nshmp-apps.war ..",
+    "make-war": "cd dist/nshmp-apps && jar cvf nshmp.war . && mv nshmp.war ..",
     "cp-tomcat-dir": "cp -r etc/tomcat/* dist/nshmp-apps/.",
     "test": "ng test",
     "lint": "ng lint",
