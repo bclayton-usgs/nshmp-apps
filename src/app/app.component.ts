@@ -18,9 +18,6 @@ export class AppComponent implements OnInit, OnDestroy {
       display: 'Dashboard',
       routerLink: ''
     }, {
-      display: 'Response Spectra',
-      routerLink: 'response-spectra'
-    }, {
       display: 'Exceedance Explorer',
       routerLink: 'exceedance-explorer'
     }
