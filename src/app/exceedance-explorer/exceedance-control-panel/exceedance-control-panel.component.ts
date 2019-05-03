@@ -1,19 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { FormBuilder, ValidatorFn, Validators } from '@angular/forms';
+import { FormBuilder, ValidatorFn, Validators, FormGroup } from '@angular/forms';
 
-import { FormControls } from '../../form-controls/form-controls.model';
 import { ExceedanceExplorer } from '../exceedance-explorer.model';
 import { ExceedanceControlPanelService } from './exceedance-control-panel.service';
 import { ExceedancePlotService } from '../exceedance-plot/exceedance-plot.service';
-import { FormControlsService } from '../../form-controls/form-controls.service';
+import { FormField, FormInput, FormFieldService } from '@nshmp/nshmp-ng-template';
 
 @Component({
   selector: 'app-exceedance-control-panel',
   templateUrl: './exceedance-control-panel.component.html',
   styleUrls: ['./exceedance-control-panel.component.scss']
 })
-export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
+export class ExceedanceControlPanelComponent implements OnInit, OnDestroy, AfterViewInit {
 
   /** Truncation value change subscription */
   truncationSubscription: Subscription;
@@ -64,75 +63,26 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
   };
 
   /** Exceedance form controls */
-  exceedanceFormControls: FormControls[] = [
-    {
-      error: `[${this.formBounds.median.min}, ${this.formBounds.median.max}]`,
-      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
-      formControlName: 'median',
-      formType: 'input',
-      label: 'Median (g)',
-      step: this.formBounds.median.step,
-      type: 'number'
-    }, {
-      error: `[${this.formBounds.sigma.min}, ${this.formBounds.sigma.max}]`,
-      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
-      formControlName: 'sigma',
-      formType: 'input',
-      label: 'Sigma (natural log units)',
-      step: this.formBounds.sigma.step,
-      type: 'number'
-    }, {
-      error: `[${this.formBounds.rate.min}, ${this.formBounds.rate.max}]`,
-      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
-      formControlName: 'rate',
-      formType: 'input',
-      label: 'Annual Rate',
-      step: this.formBounds.rate.step,
-      type: 'number'
-    }, {
-      formClass: 'grid-col-8 margin-bottom-3',
-      formControlName: 'truncation',
-      formType: 'toggle',
-      label: 'Truncation',
-    }, {
-      error: `[${this.formBounds.truncationLevel.min}, ${this.formBounds.truncationLevel.max}]`,
-      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
-      formControlName: 'truncationLevel',
-      formType: 'input',
-      label: 'Truncation Level (n)',
-      step: this.formBounds.truncationLevel.step,
-      type: 'number'
-    }
-  ];
+  exceedanceFormFields: FormField[];
 
   /** Exceedance reactive forms */
-  exceedanceForm = this.formBuilder.group({
-    median: [
-      this.defaultValues.median,
-      this.getNumberValidators(this.formBounds.median)
-    ],
-    sigma: [
-      this.defaultValues.sigma,
-      this.getNumberValidators(this.formBounds.sigma)
-    ],
-    rate: [
-      this.defaultValues.rate,
-      this.getNumberValidators(this.formBounds.rate)
-    ],
-    truncation: [this.defaultValues.truncation],
-    truncationLevel: [
-      this.defaultValues.truncationLevel,
-      this.getNumberValidators(this.formBounds.truncationLevel)
-    ]
-  });
+  exceedanceForm: FormGroup = this.formBuilder.group({
+      median: [],
+      sigma: [],
+      rate: [],
+      truncation: [this.defaultValues.truncation],
+      truncationLevel: []
+    });
 
   constructor(
       private formBuilder: FormBuilder,
       private controlPanelService: ExceedanceControlPanelService,
       private exceedancePlotService: ExceedancePlotService,
-      private formControlsService: FormControlsService) { }
+      private formFieldService: FormFieldService) { }
 
   ngOnInit() {
+    this.exceedanceFormFields = this.buildFormFields();
+
     this.truncationSubscription = this.exceedanceForm.get('truncation').valueChanges
         .subscribe((truncation: boolean) => {
           if (!truncation) {
@@ -148,13 +98,72 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
     this.hasSelectedSubscription = this.exceedancePlotService.hasSelectedObserve()
         .subscribe(hasSelected => this.hasSelected = hasSelected);
 
-    this.formControlsService.markAllAsTouched(this.exceedanceForm);
+    this.formFieldService.markAllAsTouched(this.exceedanceForm);
+  }
+
+  ngAfterViewInit() {
+    this.setDefaultValues();
+    this.setFormValidators();
   }
 
   ngOnDestroy() {
     this.truncationSubscription.unsubscribe();
     this.hasPlotSubscription.unsubscribe();
     this.hasSelectedSubscription.unsubscribe();
+  }
+
+  /**
+   * Returns the form fields of the control panel.
+   */
+  buildFormFields(): FormField[] {
+    const median: FormInput = {
+      formFieldError: `[${this.formBounds.median.min}, ${this.formBounds.median.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'median',
+      formType: 'input',
+      label: 'Median (g)',
+      step: this.formBounds.median.step,
+      type: 'number'
+    };
+
+    const sigma: FormInput = {
+      formFieldError: `[${this.formBounds.sigma.min}, ${this.formBounds.sigma.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'sigma',
+      formType: 'input',
+      label: 'Sigma (natural log units)',
+      step: this.formBounds.sigma.step,
+      type: 'number'
+    };
+
+    const rate: FormInput = {
+      formFieldError: `[${this.formBounds.rate.min}, ${this.formBounds.rate.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'rate',
+      formType: 'input',
+      label: 'Annual Rate',
+      step: this.formBounds.rate.step,
+      type: 'number'
+    };
+
+    const truncation: FormField = {
+      formClass: 'grid-col-8 margin-bottom-3',
+      formControlName: 'truncation',
+      formType: 'toggle',
+      label: 'Truncation',
+    };
+
+    const truncationLevel: FormInput = {
+      formFieldError: `[${this.formBounds.truncationLevel.min}, ${this.formBounds.truncationLevel.max}]`,
+      formClass: 'grid-col-8 margin-bottom-1 form-field-md',
+      formControlName: 'truncationLevel',
+      formType: 'input',
+      label: 'Truncation Level (n)',
+      step: this.formBounds.truncationLevel.step,
+      type: 'number'
+    };
+
+    return [median, sigma, rate, truncation, truncationLevel];
   }
 
   /**
@@ -204,6 +213,25 @@ export class ExceedanceControlPanelComponent implements OnInit, OnDestroy {
    */
   onClearPlot(): void {
     this.controlPanelService.clearPlotNext();
+  }
+
+  /**
+   * Sets all default values.
+   */
+  setDefaultValues(): void {
+    for (const key of Object.keys(this.defaultValues)) {
+      this.exceedanceForm.get(key).setValue(this.defaultValues[key]);
+    }
+
+  }
+
+  /**
+   * Set validators.
+   */
+  setFormValidators(): void {
+    for (const key of Object.keys(this.formBounds)) {
+      this.exceedanceForm.get(key).setValidators(this.getNumberValidators(this.formBounds[key]));
+    }
   }
 
 }

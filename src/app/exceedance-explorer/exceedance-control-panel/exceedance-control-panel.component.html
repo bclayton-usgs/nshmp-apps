@@ -1,9 +1,12 @@
 <!-- Exceedance explorer control panel -->
-<form [formGroup]="exceedanceForm" (ngSubmit)="onAddPlot()" id="exceedance-form">
-  <app-form-controls
+<form
+    [formGroup]="exceedanceForm"
+    (ngSubmit)="onAddPlot()"
+    id="exceedance-form">
+  <nshmp-template-form-field
       [formGroup]="exceedanceForm"
-      [formControls]="exceedanceFormControls">
-  </app-form-controls>
+      [formFields]="exceedanceFormFields">
+  </nshmp-template-form-field>
 </form>
 
 <!-- Buttons -->
