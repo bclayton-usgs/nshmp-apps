@@ -20,6 +20,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }, {
       display: 'Exceedance Explorer',
       routerLink: 'exceedance-explorer'
+    }, {
+      display: 'Hazard Map',
+      routerLink: 'hazard-map'
     }
   ];
 
