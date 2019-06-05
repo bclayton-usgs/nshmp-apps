@@ -1,3 +1,28 @@
-<p>
-  hazard-map-control-panel works!
-</p>
+<!-- Hazard map control panel -->
+<form
+    [formGroup]="hazardMapFormGroup"
+    (ngSubmit)="onPlotMap()"
+    id="hazard-map-form">
+
+    <!-- Form fields -->
+    <nshmp-template-form-field
+        [formGroup]="hazardMapFormGroup"
+        [formFields]="hazardMapFormFields">
+    </nshmp-template-form-field>
+
+  </form>
+
+  <!-- Buttons -->
+  <div class="grid-row margin-y-2">
+
+    <!-- Plot map -->
+    <button
+        class="grid-col-3"
+        color="primary"
+        [disabled]="!hazardMapFormGroup.valid"
+        form="hazard-map-form"
+        mat-raised-button
+        type="button">
+      Plot Map
+    </button>
+  </div>
