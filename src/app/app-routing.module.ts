@@ -9,6 +9,9 @@ const routes: Routes = [
     path: 'exceedance-explorer',
     loadChildren: './exceedance-explorer/exceedance-explorer.module#ExceedanceExplorerModule'
   }, {
+    path: 'hazard-map',
+    loadChildren: './hazard/hazard-map/hazard-map.module#HazardMapModule'
+  }, {
     path: '**',
     redirectTo: ''
   }
