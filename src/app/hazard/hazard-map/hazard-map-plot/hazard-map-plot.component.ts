@@ -1,9 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { HazardResultsResponse } from '@nshmp/nshmp-web-utils';
+import { SpinnerService } from '@nshmp/nshmp-ng-template';
 import { Subscription } from 'rxjs';
 
 import { HazardMapControlPanelService } from '../hazard-map-control-panel/hazard-map-control-panel.service';
-import { HazardMap } from '../hazard-map.model';
-import { SpinnerService } from '@nshmp/nshmp-ng-template';
+import { HazardMapPlotService } from './hazard-map-plot.service';
+import { HazardMapPlotResult } from '../hazard-map-results/hazard-map-plot-result.model';
+import { HazardMapPlotResultsService } from '../hazard-map-results/hazard-map-plot-results.service';
 
 @Component({
   selector: 'app-hazard-map-plot',
@@ -12,46 +15,50 @@ import { SpinnerService } from '@nshmp/nshmp-ng-template';
 })
 export class HazardMapPlotComponent implements OnInit, OnDestroy {
 
+  /* Data type menu subscription */
+  dataTypeSubscription: Subscription;
+
+  /* Hazard results subscription */
+  mapResultsSubscription: Subscription;
+
   /* Control panel service plot map subscription */
   plotMapSubsciption: Subscription;
 
   constructor(
       private controlPanelService: HazardMapControlPanelService,
+      private mapPlotService: HazardMapPlotService,
+      private mapResultsService: HazardMapPlotResultsService,
       private spinner: SpinnerService) { }
 
   ngOnInit() {
+    this.mapResultsSubscription = this.mapResultsService.getResultsObserve().subscribe(results => {
+      this.plotMap(results[0]);
+      this.mapPlotService.mapResultsNext(results);
+    });
+
     this.plotMapSubsciption = this.controlPanelService.plotMapObserve()
-        .subscribe(values => this.plotMap(values));
+        .subscribe(values => this.mapResultsService.getResults(values));
+
+    this.dataTypeSubscription = this.controlPanelService.dataTypeObserve()
+        .subscribe(result => this.plotMap(result));
   }
 
   ngOnDestroy() {
+    this.dataTypeSubscription.unsubscribe();
+    this.mapResultsSubscription.unsubscribe();
     this.plotMapSubsciption.unsubscribe();
   }
 
-  getHazardOutput(values: HazardMap): void {
-    const socket = new WebSocket('ws://localhost:8080/nshmp-haz-ws/hazard-socket');
+  plotMap(result: HazardMapPlotResult): void {
+    this.spinner.remove();
+    const reader = new FileReader();
 
-    socket.onopen = (event) => {
-      this.spinner.show('Loading ...', null);
-      console.log('onopen', event);
-      socket.send(values.zipFile);
+    reader.readAsText(result.resultBlob);
+    reader.onload = () => {
+      const hazardResult = JSON.parse(reader.result as string) as HazardResultsResponse;
+      console.log(hazardResult);
+      console.log(result.getIml());
     };
-
-    socket.onmessage = (message) => {
-      console.log('onmessage');
-      console.log(JSON.parse(message.data));
-    };
-
-    socket.onclose = () => {
-      console.log('Connection closed');
-      this.spinner.remove();
-    };
-
-  }
-
-  plotMap(values: HazardMap): void {
-    this.getHazardOutput(values);
-
   }
 
 }
