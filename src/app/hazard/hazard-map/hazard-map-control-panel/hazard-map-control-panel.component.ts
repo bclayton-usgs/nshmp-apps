@@ -1,12 +1,20 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { FormField, FormInput, FormSelect, SelectOptions } from '@nshmp/nshmp-ng-template';
+import {
+  FormField,
+  FormSelect,
+  SelectOptions,
+  SpinnerService } from '@nshmp/nshmp-ng-template';
+import {
+  HazardResultsResponse,
+  HazardResultsListing,
+  HazardResultsDataType,
+  HazardResults } from '@nshmp/nshmp-web-utils';
 import { Subscription } from 'rxjs';
+import * as d3 from 'd3';
 
 import { HazardMapControlPanelService } from './hazard-map-control-panel.service';
 import { HazardMapFormValues } from '../hazard-map-form-values.model';
-import { HazardMapPlotService } from '../hazard-map-plot/hazard-map-plot.service';
-import { HazardMapPlotResult } from '../hazard-map-results/hazard-map-plot-result.model';
 
 @Component({
   selector: 'app-hazard-map-control-panel',
@@ -14,80 +22,154 @@ import { HazardMapPlotResult } from '../hazard-map-results/hazard-map-plot-resul
   styleUrls: ['./hazard-map-control-panel.component.scss']
 })
 export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
-
-  /* Subscription for when data type is changed */
-  dataTypeSubscription: Subscription;
-
   /* Hazard map form fields */
   hazardMapFormFields: FormField[];
 
-  /* Subscription for when iml is changed */
-  imlSubscription: Subscription;
+  /* Subscriptions */
+  usersMenuSubscription = new Subscription();
+  hazardResultsMenuSubscription = new Subscription();
+  getCSVSubscription = new Subscription();
 
-  /* Subscription for when plot map is clicked */
-  mapPlotSubscription: Subscription;
+  /* Hazard results from nshmp-haz-results Lambda function */
+  hazardResponse: HazardResultsResponse;
 
   /* Hazard map form group */
   hazardMapFormGroup: FormGroup = this.formBuilder.group({
-    zipFile: ['', Validators.required],
-    dataType: [{ value: '', disabled: true }],
-    iml: [{value: '', disabled: true}]
+    users: [{value: '', disable: true}, Validators.required],
+    hazardResult: [{value: '', disable: true}, Validators.required],
+    dataType: [{value: '', disable: true}, Validators.required],
+    returnPeriod: [{value: '', disable: true}, Validators.required]
   });
+
+  /* Return periods */
+  private readonly SLICE_2P50 = 0.000404;
+  private readonly SLICE_5P50 = 0.00103;
+  private readonly SLICE_10P50 = 0.0021;
 
   constructor(
       private controlPanelService: HazardMapControlPanelService,
       private formBuilder: FormBuilder,
-      private mapPlotService: HazardMapPlotService) { }
+      private spinner: SpinnerService) { }
 
   ngOnInit() {
-    this.hazardMapFormFields = this.buildFormFields();
+    this.spinner.show('Loading');
+    this.controlPanelService.getNshmpHazResults().subscribe(response => {
+      this.hazardResponse = response;
+      this.buildUsersMenu(response);
+      this.spinner.remove();
+    });
 
-    this.mapPlotSubscription = this.mapPlotService.mapResultsObserve()
-        .subscribe(dataTypes => this.buildDataTypeMenu(dataTypes));
+    this.hazardMapFormFields = this.buildFormFields();
   }
 
   ngOnDestroy() {
-    this.dataTypeSubscription.unsubscribe();
-    this.imlSubscription.unsubscribe();
-    this.mapPlotSubscription.unsubscribe();
+    this.usersMenuSubscription.unsubscribe();
+    this.hazardResultsMenuSubscription.unsubscribe();
+    this.getCSVSubscription.unsubscribe();
   }
 
-  buildDataTypeMenu(results: HazardMapPlotResult[]): void {
-    if (this.dataTypeSubscription) {
-      this.dataTypeSubscription.unsubscribe();
-    }
+  onPlotMap(): void {
+    this.getCSVSubscription.unsubscribe();
 
+    const values = this.getFormValues();
+    const hazardResults = this.getHazardResults(this.hazardResponse, values.user);
+    const hazardResult = this.getHazardResult(hazardResults, values.resultPrefix);
+    const listing = this.getHazardListing(hazardResult, values.dataType);
+    const s3Path = `https://${hazardResult.bucket}.s3-us-west-2.amazonaws.com/` +
+        `${hazardResult.user}/${listing.path}/${listing.file}`;
+
+    this.getCSVSubscription = this.controlPanelService.getCSVFile(s3Path).subscribe(result => {
+      const csv = d3.csvParse(result);
+      const slices = csv.columns.splice(3, csv.columns.length).map(slice => parseFloat(slice));
+      this.buildReturnPeriodMenu(slices);
+    });
+  }
+
+  private buildDataTypeMenu(hazardResult: HazardResults): void {
     const dataTypeMenu = this.getDataTypeMenu();
-    const options = this.buildDataTypeOptions(results);
-    dataTypeMenu.options  = options;
-    const intialDataType = options[0];
+    const options = this.buildDataTypeSelectOptions(hazardResult);
+    dataTypeMenu.options = options;
 
     const dataTypeControl = this.hazardMapFormGroup.get('dataType');
-    dataTypeControl.setValue(intialDataType.value);
     dataTypeControl.enable();
-
-    const intitalResult = results.find(res => {
-      return res.value === intialDataType.value;
-    });
-
-    this.buildImlMenu(intitalResult);
-
-    this.dataTypeSubscription = this.hazardMapFormGroup.get('dataType')
-        .valueChanges.subscribe((value: string) => {
-          const result = results.find(res => {
-            return res.value === value;
-          });
-          this.onDataTypeChange(result);
-        });
+    dataTypeControl.setValue(hazardResult.listings[0].dataType);
   }
 
-  buildDataTypeOptions(results: HazardMapPlotResult[]): SelectOptions[] {
+  private buildDataTypeSelectOptions(hazardResult: HazardResults): SelectOptions[] {
     const options: SelectOptions[] = [];
 
-    results.forEach(result => {
+    hazardResult.listings.forEach(listing => {
+      const dataType = listing.dataType;
+      const label = dataType.imt.value === dataType.sourceType.value
+          ? dataType.imt.value
+          : `${dataType.imt.value}.${dataType.type}.${dataType.sourceType}`;
+
+      options.push({
+        label,
+        value: listing.dataType
+      });
+    });
+
+    return options;
+  }
+
+  private buildFormFields(): FormField[] {
+    const users: FormSelect = {
+      formClass: 'grid-col-12',
+      formControlName: 'users',
+      formType: 'select',
+      label: 'Users',
+    };
+
+    const result: FormSelect = {
+      formClass: 'grid-col-12',
+      formControlName: 'hazardResult',
+      formType: 'select',
+      label: 'Hazard Result',
+    };
+
+    const dataType: FormSelect = {
+      formClass: 'grid-col-12',
+      formControlName: 'dataType',
+      formType: 'select',
+      label: 'Data Type',
+    };
+
+    const returnPeriod: FormSelect = {
+      formClass: 'grid-col-12',
+      formControlName: 'returnPeriod',
+      formType: 'select',
+      label: 'Return Period',
+    };
+
+    return [ users, result, dataType, returnPeriod ];
+  }
+
+  private buildHazardResultMenu(hazardResults: HazardResults[]): void {
+    this.hazardResultsMenuSubscription.unsubscribe();
+
+    const resultMenu = this.getHazardResultMenu();
+    const options = this.buildHazardResultSelectOptions(hazardResults);
+    resultMenu.options = options;
+
+    const resultControl = this.hazardMapFormGroup.get('hazardResult');
+    resultControl.enable();
+    resultControl.setValue(hazardResults[0].resultPrefix);
+
+    this.buildDataTypeMenu(hazardResults[0]);
+
+    this.hazardResultsMenuSubscription = resultControl.valueChanges.subscribe(resultPrefix => {
+      this.buildDataTypeMenu(this.getHazardResult(hazardResults, resultPrefix));
+    });
+  }
+
+  private buildHazardResultSelectOptions(hazardResults: HazardResults[]): SelectOptions[] {
+    const options: SelectOptions[] = [];
+
+    hazardResults.forEach(result => {
       const option: SelectOptions = {
-        label: result.display,
-        value: result.value
+        label: result.resultPrefix,
+        value: result.resultPrefix
       };
       options.push(option);
     });
@@ -95,112 +177,121 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     return options;
   }
 
-  buildFormFields(): FormField[] {
-    const zipFile: FormInput = {
-      formClass: 'grid-col-12 margin-top-1 form-field-md',
-      formControlName: 'zipFile',
-      formType: 'input',
-      label: 'Hazard Output Zip File URL',
-      type: 'text'
-    };
+  private buildReturnPeriodMenu(slices: number[]): void {
+    const menu = this.getReturnPeriodMenu();
+    const options = this.buildReturnPeriodSelectOptions(slices);
+    menu.options = options;
 
-    const dataType: FormSelect = {
-      formClass: 'grid-col-12 form-field-md',
-      formControlName: 'dataType',
-      formType: 'select',
-      label: 'Data Type',
-    };
-
-    const iml: FormSelect = {
-      formClass: 'grid-col-12 form-field-md',
-      formControlName: 'iml',
-      formType: 'select',
-      label: 'Intensity Measure Level',
-    };
-
-    return [ zipFile, dataType, iml ];
+    const control = this.hazardMapFormGroup.get('returnPeriod');
+    control.enable();
+    control.setValue(slices[0]);
   }
 
-  buildImlMenu(result: HazardMapPlotResult): void {
-    if (this.imlSubscription) {
-      this.imlSubscription.unsubscribe();
-    }
+  private buildReturnPeriodSelectOptions(slices: number[]): SelectOptions[] {
+    const options: SelectOptions[] = [];
 
-    const imlMenu = this.getImlMenu();
-    const options = this.buildImlOptions(result);
-    imlMenu.options = options;
-    const intialIml = options[0];
+    slices.forEach(slice => {
+      let label = '';
+      const years = (1 / slice).toFixed(0);
+      switch (slice) {
+        case this.SLICE_2P50:
+          label = `${years} years (2% in 50 years)`;
+          break;
+        case this.SLICE_5P50:
+          label = `${years} years (5% in 50 years)`;
+          break;
+        case this.SLICE_10P50:
+          label = `${years} years (10% in 50 years)`;
+          break;
+        default:
+          label = `${years} years`;
+      }
 
-    const imlControl = this.hazardMapFormGroup.get('iml');
-    result.setIml(intialIml.value);
-    imlControl.setValue(intialIml.value);
-    imlControl.enable();
-
-    this.imlSubscription = imlControl.valueChanges.subscribe((iml) => {
-      this.onImlChange(result, iml);
-    });
-  }
-
-  buildImlOptions(result: HazardMapPlotResult): SelectOptions[] {
-    const options: SelectOptions[] = result.imls.map(iml => {
-      const option: SelectOptions = {
-        label: String(iml),
-        value: iml
-      };
-      return option;
+      options.push({
+        label,
+        value: slice
+      });
     });
 
     return options;
   }
 
-  getDataTypeMenu(): FormSelect {
-    return this.hazardMapFormFields.find(form => {
-      return form.formControlName === 'dataType';
+  private buildUsersMenu(response: HazardResultsResponse) {
+    this.usersMenuSubscription.unsubscribe();
+
+    const usersMenu = this.getUsersMenu();
+    const options = this.buildUsersSelectOptions(response);
+    usersMenu.options = options;
+
+    const usersControl = this.hazardMapFormGroup.get('users');
+    usersControl.enable();
+    const initialUser = response.result.users[0];
+    usersControl.setValue(initialUser);
+    this.buildHazardResultMenu(this.getHazardResults(response, initialUser));
+
+    this.usersMenuSubscription = usersControl.valueChanges.subscribe(user => {
+      this.buildHazardResultMenu(this.getHazardResults(response, user));
     });
   }
 
-  getFormValues(): HazardMapFormValues {
+  private buildUsersSelectOptions(response: HazardResultsResponse): SelectOptions[] {
+    const options: SelectOptions[] = [];
+
+    response.result.users.forEach(user => {
+      options.push({
+        label: user,
+        value: user
+      });
+    });
+
+    return options;
+  }
+
+  private getHazardResult(hazardResults: HazardResults[], resultPrefix: string): HazardResults {
+    return hazardResults.find(hazardResult => hazardResult.resultPrefix === resultPrefix);
+  }
+
+  private getHazardResults(response: HazardResultsResponse, user: string): HazardResults[] {
+    return response.result.hazardResults
+        .filter(listing => listing.user === user);
+  }
+
+  private getReturnPeriodMenu(): FormSelect {
+    return this.getMenu('returnPeriod');
+  }
+
+  private getDataTypeMenu(): FormSelect {
+    return this.getMenu('dataType');
+  }
+
+  private getFormValues(): HazardMapFormValues {
     const values: HazardMapFormValues = {
-      zipFile: this.hazardMapFormGroup.get('zipFile').value as string
+      user: this.hazardMapFormGroup.get('users').value as string,
+      dataType: this.hazardMapFormGroup.get('dataType').value as HazardResultsDataType,
+      resultPrefix: this.hazardMapFormGroup.get('hazardResult').value as string
     };
 
     return values;
   }
 
-  getImlMenu(): FormSelect {
+  private getHazardListing(
+      hazardResult: HazardResults,
+      dataType: HazardResultsDataType): HazardResultsListing {
+    return hazardResult.listings.find(listing => listing.dataType === dataType);
+  }
+
+  private getHazardResultMenu(): FormSelect {
+    return this.getMenu('hazardResult');
+  }
+
+  private getMenu(name: string): FormField {
     return this.hazardMapFormFields.find(form => {
-      return form.formControlName === 'iml';
+      return form.formControlName === name;
     });
   }
 
-  onDataTypeChange(result: HazardMapPlotResult): void {
-    this.buildImlMenu(result);
-    this.controlPanelService.dataTypeNext(result);
-  }
-
-  onImlChange(result: HazardMapPlotResult, iml: number): void {
-    result.setIml(iml);
-    this.controlPanelService.dataTypeNext(result);
-  }
-
-  onPlotMap(): void {
-    if (this.dataTypeSubscription) {
-      this.dataTypeSubscription.unsubscribe();
-    }
-
-    if (this.imlSubscription) {
-      this.imlSubscription.unsubscribe();
-    }
-
-    const dataTypeMenu = this.getDataTypeMenu();
-    dataTypeMenu.options = [];
-    this.hazardMapFormGroup.get('dataType').disable();
-
-    const imlMenu = this.getImlMenu();
-    imlMenu.options = [];
-    this.hazardMapFormGroup.get('iml').disable();
-
-    this.controlPanelService.plotMapNext(this.getFormValues());
+  private getUsersMenu(): FormSelect {
+    return this.getMenu('users');
   }
 
 }
