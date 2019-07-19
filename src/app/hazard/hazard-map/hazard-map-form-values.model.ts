@@ -1,7 +1,10 @@
+import { HazardResultsDataType } from '@nshmp/nshmp-web-utils';
 
 /**
  * Hazard map form values.
  */
 export interface HazardMapFormValues {
-  zipFile: string;
+  user: string;
+  resultPrefix: string;
+  dataType: HazardResultsDataType;
 }
