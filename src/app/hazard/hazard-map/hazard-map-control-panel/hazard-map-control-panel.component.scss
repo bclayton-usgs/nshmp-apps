@@ -1,0 +1,13 @@
+
+::ng-deep .mat-option .mat-option-text {
+  text-overflow: initial;
+  overflow: visible;
+}
+
+::ng-deep .mat-select-panel {
+  min-width: min-content !important;
+}
+
+::ng-deep .mat-select-panel-wrap {
+  overflow-x: scroll;
+}
