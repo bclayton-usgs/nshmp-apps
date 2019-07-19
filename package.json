@@ -27,7 +27,7 @@
     "@angular/router": "~7.2.0",
     "@nshmp/nshmp-d3": "^0.1.9",
     "@nshmp/nshmp-ng-template": "^0.3.10",
-    "@nshmp/nshmp-web-utils": "^0.3.7",
+    "@nshmp/nshmp-web-utils": "^0.3.11",
     "core-js": "^2.5.4",
     "hammerjs": "^2.0.8",
     "rxjs": "~6.3.3",
