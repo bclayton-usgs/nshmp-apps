@@ -45,7 +45,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private setTitle() {
     const currentRoute = this.navigationList.find(nav => {
-      return `/${nav.routerLink}` === this.router.url;
+      return `/${nav.routerLink}` === this.router.url.split('?').shift();
     });
 
     this.titleService.setTitle(currentRoute.display);
