@@ -1,20 +1,25 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { FormGroup, FormBuilder, Validators, AbstractControl } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FormField,
   FormSelect,
   SelectOptions,
-  SpinnerService } from '@nshmp/nshmp-ng-template';
+  SpinnerService,
+  FormFieldService} from '@nshmp/nshmp-ng-template';
 import {
   HazardResultsResponse,
   HazardResultsListing,
   HazardResultsDataType,
-  HazardResults } from '@nshmp/nshmp-web-utils';
+  HazardResults,
+  NshmpError} from '@nshmp/nshmp-web-utils';
+import { FeatureCollection, Feature } from 'geojson';
 import { Subscription } from 'rxjs';
 import * as d3 from 'd3';
 
 import { HazardMapControlPanelService } from './hazard-map-control-panel.service';
 import { HazardMapFormValues } from '../hazard-map-form-values.model';
+import { HazardMapPlotService } from '../hazard-map-plot/hazard-map-plot.service';
 
 @Component({
   selector: 'app-hazard-map-control-panel',
@@ -26,19 +31,21 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
   hazardMapFormFields: FormField[];
 
   /* Subscriptions */
-  usersMenuSubscription = new Subscription();
-  hazardResultsMenuSubscription = new Subscription();
   getCSVSubscription = new Subscription();
+  hazResultsSubscription = new Subscription();
+  hazardResultsMenuSubscription = new Subscription();
+  usersMenuSubscription = new Subscription();
+  queryParamSubscription = new Subscription();
 
   /* Hazard results from nshmp-haz-results Lambda function */
   hazardResponse: HazardResultsResponse;
 
   /* Hazard map form group */
   hazardMapFormGroup: FormGroup = this.formBuilder.group({
-    users: [{value: '', disable: true}, Validators.required],
-    hazardResult: [{value: '', disable: true}, Validators.required],
-    dataType: [{value: '', disable: true}, Validators.required],
-    returnPeriod: [{value: '', disable: true}, Validators.required]
+    users: [Validators.required, Validators.minLength(2)],
+    hazardResult: [Validators.required, Validators.minLength(2)],
+    dataType: [Validators.required, Validators.minLength(2)],
+    returnPeriod: [Validators.required, Validators.minLength(2)]
   });
 
   /* Return periods */
@@ -46,43 +53,67 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
   private readonly SLICE_5P50 = 0.00103;
   private readonly SLICE_10P50 = 0.0021;
 
+  private readonly DATA_TYPE = 'dataType';
+  private readonly LAT = 'lat';
+  private readonly LON = 'lon';
+  private readonly NAME = 'name';
+  private readonly RESULT_PREFIX = 'resultPrefix';
+  private readonly RETURN_PERIOD = 'returnPeriod';
+  private readonly USER = 'user';
+
   constructor(
       private controlPanelService: HazardMapControlPanelService,
       private formBuilder: FormBuilder,
-      private spinner: SpinnerService) { }
+      private plotService: HazardMapPlotService,
+      private spinner: SpinnerService,
+      private formService: FormFieldService,
+      private route: ActivatedRoute,
+      private router: Router) { }
 
   ngOnInit() {
-    this.spinner.show('Loading');
-    this.controlPanelService.getNshmpHazResults().subscribe(response => {
-      this.hazardResponse = response;
-      this.buildUsersMenu(response);
-      this.spinner.remove();
-    });
-
+    this.spinner.show('Loading ...');
     this.hazardMapFormFields = this.buildFormFields();
+
+    this.hazResultsSubscription = this.controlPanelService.getNshmpHazResults()
+        .subscribe(response => {
+          this.onNshmpHazResults(response);
+        }, err => {
+          this.spinner.remove();
+          NshmpError.throwError(err);
+        });
   }
 
   ngOnDestroy() {
+    this.hazResultsSubscription.unsubscribe();
     this.usersMenuSubscription.unsubscribe();
     this.hazardResultsMenuSubscription.unsubscribe();
     this.getCSVSubscription.unsubscribe();
+    this.queryParamSubscription.unsubscribe();
   }
 
   onPlotMap(): void {
+    this.queryParamSubscription.unsubscribe();
     this.getCSVSubscription.unsubscribe();
+    this.updateQueryParameters();
 
-    const values = this.getFormValues();
-    const hazardResults = this.getHazardResults(this.hazardResponse, values.user);
-    const hazardResult = this.getHazardResult(hazardResults, values.resultPrefix);
-    const listing = this.getHazardListing(hazardResult, values.dataType);
-    const s3Path = `https://${hazardResult.bucket}.s3-us-west-2.amazonaws.com/` +
-        `${hazardResult.user}/${listing.path}/${listing.file}`;
+    this.getCSVSubscription = this.controlPanelService.getCSVFile(this.getS3Request())
+        .subscribe(csv => this.onGetCSVFile(csv),
+        err => NshmpError.throwError(err));
+  }
 
-    this.getCSVSubscription = this.controlPanelService.getCSVFile(s3Path).subscribe(result => {
-      const csv = d3.csvParse(result);
-      const slices = csv.columns.splice(3, csv.columns.length).map(slice => parseFloat(slice));
-      this.buildReturnPeriodMenu(slices);
-    });
+  private checkQueryParameters(params: HazardMapFormValues): void {
+    if (this.DATA_TYPE in params &&
+        this.RESULT_PREFIX in params &&
+        this.RETURN_PERIOD in params &&
+        this.USER in params) {
+      this.getUsersControl().setValue(params.user);
+      this.getHazardResultControl().setValue(params.resultPrefix);
+      this.getDataTypeControl().setValue(params.dataType);
+      this.getReturnPeriodControl().setValue(parseFloat(params.returnPeriod as string));
+      if (this.hazardMapFormGroup.valid) {
+        this.onPlotMap();
+      }
+    }
   }
 
   private buildDataTypeMenu(hazardResult: HazardResults): void {
@@ -90,9 +121,13 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     const options = this.buildDataTypeSelectOptions(hazardResult);
     dataTypeMenu.options = options;
 
-    const dataTypeControl = this.hazardMapFormGroup.get('dataType');
-    dataTypeControl.enable();
-    dataTypeControl.setValue(hazardResult.listings[0].dataType);
+    const control = this.getDataTypeControl();
+    control.enable();
+    control.setValue(this.getDataTypeId(hazardResult.listings[0].dataType));
+
+    this.getCSVSubscription = this.controlPanelService.getCSVFile(this.getS3Request())
+        .subscribe(csv => this.getReturnPeriods(csv),
+        err => NshmpError.throwError(err));
   }
 
   private buildDataTypeSelectOptions(hazardResult: HazardResults): SelectOptions[] {
@@ -100,13 +135,11 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
 
     hazardResult.listings.forEach(listing => {
       const dataType = listing.dataType;
-      const label = dataType.imt.value === dataType.sourceType.value
-          ? dataType.imt.value
-          : `${dataType.imt.value}.${dataType.type}.${dataType.sourceType}`;
+      const id = this.getDataTypeId(dataType);
 
       options.push({
-        label,
-        value: listing.dataType
+        label: id,
+        value: id
       });
     });
 
@@ -152,15 +185,15 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     const options = this.buildHazardResultSelectOptions(hazardResults);
     resultMenu.options = options;
 
-    const resultControl = this.hazardMapFormGroup.get('hazardResult');
-    resultControl.enable();
-    resultControl.setValue(hazardResults[0].resultPrefix);
+    const control = this.getHazardResultControl();
+    control.enable();
+    control.setValue(hazardResults[0].resultPrefix);
 
     this.buildDataTypeMenu(hazardResults[0]);
 
-    this.hazardResultsMenuSubscription = resultControl.valueChanges.subscribe(resultPrefix => {
-      this.buildDataTypeMenu(this.getHazardResult(hazardResults, resultPrefix));
-    });
+    this.hazardResultsMenuSubscription = control.valueChanges.subscribe(resultPrefix => {
+      this.onHazardResultsChange(resultPrefix);
+    }, err => NshmpError.throwError(err));
   }
 
   private buildHazardResultSelectOptions(hazardResults: HazardResults[]): SelectOptions[] {
@@ -177,34 +210,34 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     return options;
   }
 
-  private buildReturnPeriodMenu(slices: number[]): void {
+  private buildReturnPeriodMenu(slices: string[]): void {
     const menu = this.getReturnPeriodMenu();
     const options = this.buildReturnPeriodSelectOptions(slices);
     menu.options = options;
 
-    const control = this.hazardMapFormGroup.get('returnPeriod');
+    const control = this.getReturnPeriodControl();
     control.enable();
     control.setValue(slices[0]);
   }
 
-  private buildReturnPeriodSelectOptions(slices: number[]): SelectOptions[] {
+  private buildReturnPeriodSelectOptions(slices: string[]): SelectOptions[] {
     const options: SelectOptions[] = [];
 
     slices.forEach(slice => {
       let label = '';
-      const years = (1 / slice).toFixed(0);
-      switch (slice) {
+      const years = (1 / parseFloat(slice)).toFixed(0);
+      switch (parseFloat(slice)) {
         case this.SLICE_2P50:
-          label = `${years} years (2% in 50 years)`;
+          label = `2% in 50 Years`;
           break;
         case this.SLICE_5P50:
-          label = `${years} years (5% in 50 years)`;
+          label = `5% in 50 Years)`;
           break;
         case this.SLICE_10P50:
-          label = `${years} years (10% in 50 years)`;
+          label = `10%$ in 50 Years)`;
           break;
         default:
-          label = `${years} years`;
+          label = `${years} Years`;
       }
 
       options.push({
@@ -223,15 +256,15 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     const options = this.buildUsersSelectOptions(response);
     usersMenu.options = options;
 
-    const usersControl = this.hazardMapFormGroup.get('users');
-    usersControl.enable();
+    const control = this.getUsersControl();
+    control.enable();
     const initialUser = response.result.users[0];
-    usersControl.setValue(initialUser);
-    this.buildHazardResultMenu(this.getHazardResults(response, initialUser));
+    control.setValue(initialUser);
+    this.buildHazardResultMenu(this.getHazardResults(response));
 
-    this.usersMenuSubscription = usersControl.valueChanges.subscribe(user => {
-      this.buildHazardResultMenu(this.getHazardResults(response, user));
-    });
+    this.usersMenuSubscription = control.valueChanges
+        .subscribe(user => this.onUserChange(response, user),
+        err => NshmpError.throwError(err));
   }
 
   private buildUsersSelectOptions(response: HazardResultsResponse): SelectOptions[] {
@@ -247,17 +280,18 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     return options;
   }
 
-  private getHazardResult(hazardResults: HazardResults[], resultPrefix: string): HazardResults {
-    return hazardResults.find(hazardResult => hazardResult.resultPrefix === resultPrefix);
+  private getControl(name: string): AbstractControl {
+    return this.hazardMapFormGroup.get(name);
   }
 
-  private getHazardResults(response: HazardResultsResponse, user: string): HazardResults[] {
-    return response.result.hazardResults
-        .filter(listing => listing.user === user);
+  private getDataTypeControl(): AbstractControl {
+    return this.getControl('dataType');
   }
 
-  private getReturnPeriodMenu(): FormSelect {
-    return this.getMenu('returnPeriod');
+  private getDataTypeId(dataType: HazardResultsDataType): string {
+    return dataType.imt.value === dataType.sourceType.value
+        ? dataType.imt.value
+        : `${dataType.imt.value}.${dataType.type}.${dataType.sourceType}`;
   }
 
   private getDataTypeMenu(): FormSelect {
@@ -267,21 +301,40 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
   private getFormValues(): HazardMapFormValues {
     const values: HazardMapFormValues = {
       user: this.hazardMapFormGroup.get('users').value as string,
-      dataType: this.hazardMapFormGroup.get('dataType').value as HazardResultsDataType,
-      resultPrefix: this.hazardMapFormGroup.get('hazardResult').value as string
+      dataType: this.hazardMapFormGroup.get('dataType').value as string,
+      resultPrefix: this.hazardMapFormGroup.get('hazardResult').value as string,
+      returnPeriod: this.hazardMapFormGroup.get('returnPeriod').value as number
     };
 
     return values;
   }
 
-  private getHazardListing(
-      hazardResult: HazardResults,
-      dataType: HazardResultsDataType): HazardResultsListing {
-    return hazardResult.listings.find(listing => listing.dataType === dataType);
+  private getHazardListing(response: HazardResultsResponse): HazardResultsListing {
+    const values = this.getFormValues();
+    const hazardResult = this.getHazardResult(response);
+    return hazardResult.listings.find(listing => {
+      return this.getDataTypeId(listing.dataType) === values.dataType;
+    });
+  }
+
+  private getHazardResult(response: HazardResultsResponse): HazardResults {
+    const values = this.getFormValues();
+    const hazardResults = this.getHazardResults(response);
+    return hazardResults.find(hazardResult => hazardResult.resultPrefix === values.resultPrefix);
+  }
+
+  private getHazardResults(response: HazardResultsResponse): HazardResults[] {
+    const values = this.getFormValues();
+    return response.result.hazardResults
+        .filter(listing => listing.user === values.user);
   }
 
   private getHazardResultMenu(): FormSelect {
     return this.getMenu('hazardResult');
+  }
+
+  private getHazardResultControl(): AbstractControl {
+    return this.getControl('hazardResult');
   }
 
   private getMenu(name: string): FormField {
@@ -290,8 +343,125 @@ export class HazardMapControlPanelComponent implements OnInit, OnDestroy {
     });
   }
 
+  private getReturnPeriodControl(): AbstractControl {
+    return this.getControl('returnPeriod');
+  }
+
+  private getReturnPeriodMenu(): FormSelect {
+    return this.getMenu('returnPeriod');
+  }
+
+  private getReturnPeriods(csv: d3.DSVRowArray<string>) {
+    const slices = csv.columns.slice(3, csv.columns.length);
+    this.buildReturnPeriodMenu(slices);
+  }
+
+  private getS3Request(): AWS.S3.GetObjectRequest {
+    const hazardResult = this.getHazardResult(this.hazardResponse);
+    const listing = this.getHazardListing(this.hazardResponse);
+    const bucket = `${hazardResult.bucket}/${hazardResult.user}/${listing.path}`;
+
+    return {
+      Bucket: bucket,
+      Key: listing.file
+    };
+  }
+
+  private getUsersControl(): AbstractControl {
+    return this.getControl('users');
+  }
+
   private getUsersMenu(): FormSelect {
     return this.getMenu('users');
+  }
+
+  private onGetCSVFile(csv: d3.DSVRowArray<string>): void {
+    const fc = this.toFeatureCollection(csv);
+    const slice = this.getFormValues().returnPeriod;
+    const option = this.getReturnPeriodMenu().options.find(opt => opt.value === slice);
+    const listing = this.getHazardListing(this.hazardResponse);
+
+    this.plotService.geoJsonNext({
+      fc,
+      propertyName: this.RETURN_PERIOD,
+      mapTitle: `${option.label} Probability of Exceedance`,
+      legendTitle: listing.dataType.imt.display,
+    });
+  }
+
+  private onHazardResultsChange(resultPrefix: string): void {
+    if (resultPrefix == null) {
+      return;
+    }
+
+    this.getDataTypeControl().reset();
+    this.getReturnPeriodControl().reset();
+    this.buildDataTypeMenu(this.getHazardResult(this.hazardResponse));
+  }
+
+  private onNshmpHazResults(response: HazardResultsResponse): void {
+    this.hazardResponse = response;
+    this.buildUsersMenu(response);
+    this.spinner.remove();
+    this.formService.markAllAsTouched(this.hazardMapFormGroup);
+
+    this.queryParamSubscription = this.route.queryParams
+        .subscribe((params: HazardMapFormValues) => this.checkQueryParameters(params),
+        err => NshmpError.throwError(err));
+  }
+
+  private onUserChange(response: HazardResultsResponse, user: string) {
+    this.getHazardResultControl().reset();
+    this.getDataTypeControl().reset();
+    this.getReturnPeriodControl().reset();
+    this.buildHazardResultMenu(this.getHazardResults(response));
+  }
+
+  private toFeatureCollection(csv: d3.DSVRowArray<string>): FeatureCollection {
+    const features: Feature[] = [];
+
+    csv.forEach(row => {
+      const name = row[this.NAME];
+      const lat = +row[this.LAT];
+      const lon = +row[this.LON];
+      const formValues = this.getFormValues();
+      const returnPeriod = formValues.returnPeriod;
+      const slice = parseFloat(row[returnPeriod]);
+
+      features.push({
+        type: 'Feature',
+        properties: {
+          latitude: lat,
+          longitude: lat,
+          name,
+          returnPeriod: slice
+        },
+        geometry: {
+          coordinates: [lon, lat],
+          type: 'Point'
+        }
+      });
+    });
+
+    return {
+      type: 'FeatureCollection',
+      features
+    };
+  }
+
+  private updateQueryParameters(): void {
+    const values = this.getFormValues();
+    const params: HazardMapFormValues = {
+      user: values.user,
+      dataType: values.dataType,
+      resultPrefix: values.resultPrefix,
+      returnPeriod: values.returnPeriod.toString(),
+    };
+
+    this.router.navigate(['.'], {
+      relativeTo: this.route,
+      queryParams: params
+    });
   }
 
 }
