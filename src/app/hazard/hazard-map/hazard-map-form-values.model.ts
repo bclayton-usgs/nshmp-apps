@@ -4,7 +4,7 @@
  */
 export interface HazardMapFormValues {
   user: string;
-  resultPrefix: string;
+  hazardResult: string;
   dataType: string;
   returnPeriod: number | string;
 }
