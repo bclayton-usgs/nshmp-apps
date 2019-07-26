@@ -1,3 +1,5 @@
+@import '~@nshmp/nshmp-ng-template/scss/uswds-functions';
+
 :host {
   display: flex;
   height: 100%;
@@ -11,4 +13,5 @@
 
 mat-card {
   margin: 2em;
+  @include u-bg('base-lightest')
 }
