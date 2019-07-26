@@ -4,25 +4,25 @@
     (ngSubmit)="onPlotMap()"
     id="hazard-map-form">
 
-    <!-- Form fields -->
-    <nshmp-template-form-field
-        [formGroup]="hazardMapFormGroup"
-        [formFields]="hazardMapFormFields">
-    </nshmp-template-form-field>
+  <!-- Form fields -->
+  <nshmp-template-form-field
+      [formGroup]="hazardMapFormGroup"
+      [formFields]="hazardMapFormFields">
+  </nshmp-template-form-field>
 
-  </form>
+</form>
 
-  <!-- Buttons -->
-  <div class="grid-row margin-y-2">
+<!-- Buttons -->
+<div class="grid-row margin-y-2">
 
-    <!-- Plot map -->
-    <button
-        class="grid-col-3"
-        color="primary"
-        [disabled]="!hazardMapFormGroup.valid"
-        form="hazard-map-form"
-        mat-raised-button
-        type="submit">
-      Plot Map
-    </button>
-  </div>
+  <!-- Plot map -->
+  <button
+      class="grid-col-3"
+      color="primary"
+      [disabled]="!hazardMapFormGroup.valid"
+      form="hazard-map-form"
+      mat-raised-button
+      type="submit">
+    Plot Map
+  </button>
+</div>
