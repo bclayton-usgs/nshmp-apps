@@ -25,7 +25,7 @@
     "@angular/platform-browser": "~7.2.0",
     "@angular/platform-browser-dynamic": "~7.2.0",
     "@angular/router": "~7.2.0",
-    "@nshmp/nshmp-d3": "^0.1.18",
+    "@nshmp/nshmp-d3": "^0.1.22",
     "@nshmp/nshmp-ng-template": "^0.3.10",
     "@nshmp/nshmp-web-utils": "^0.3.11",
     "aws-sdk": "^2.498.0",
