@@ -23,6 +23,9 @@ export class AppComponent implements OnInit, OnDestroy {
     }, {
       display: 'Hazard Map',
       routerLink: 'hazard-map'
+    }, {
+      display: 'AWS Running Jobs',
+      routerLink: 'aws-jobs'
     }
   ];
 

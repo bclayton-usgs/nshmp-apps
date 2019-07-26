@@ -12,6 +12,9 @@ const routes: Routes = [
     path: 'hazard-map',
     loadChildren: './hazard/hazard-map/hazard-map.module#HazardMapModule'
   }, {
+    path: 'aws-jobs',
+    loadChildren: './aws/aws-jobs/aws-jobs.module#AwsJobsModule'
+  }, {
     path: '**',
     redirectTo: ''
   }

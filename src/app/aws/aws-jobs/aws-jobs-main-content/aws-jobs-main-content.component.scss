@@ -1,4 +1,3 @@
-@import '~@nshmp/nshmp-ng-template/scss/uswds-functions';
 
 :host {
   display: flex;
@@ -6,12 +5,15 @@
   width: 100%;
 }
 
-.dashboard-container {
+.content-container {
   width: 100%;
   margin: auto;
 }
 
 mat-card {
   margin: 2em;
-  @include u-bg('base-lightest')
+}
+
+.table-key {
+  padding-right: 1.5em !important;
 }
