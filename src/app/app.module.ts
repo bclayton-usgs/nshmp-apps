@@ -1,11 +1,21 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { NshmpTemplateModule } from '@nshmp/nshmp-ng-template';
+import * as AWS from 'aws-sdk';
+import Config from 'src/config.json';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { CoreModule } from './core/core.module';
-import { HttpClient } from '@angular/common/http';
+
+AWS.config.update(new AWS.Config({
+  region: 'us-west-2',
+  apiVersions: {
+    lambda: '2015-03-31'
+  },
+  accessKeyId: Config.accessKeyId,
+  secretAccessKey: Config.secretAccessKey
+}));
 
 @NgModule({
   declarations: [
@@ -21,15 +31,6 @@ import { HttpClient } from '@angular/common/http';
   bootstrap: [AppComponent]
 })
 export class AppModule {
-  private readonly AWS_URL = 'https://kqyga0ebwe.execute-api.us-west-2.amazonaws.com/nshmp/nshmp-haz-results';
-  private readonly DELAY = 10 * 60 * 1000;
 
-  constructor(private http: HttpClient) {
-    this.callNshmpHazResults();
-    setInterval(this.callNshmpHazResults.bind(this), this.DELAY);
-  }
-
-  callNshmpHazResults() {
-    this.http.get(this.AWS_URL).subscribe(() => console.log('Called'));
-  }
+  constructor() {}
 }

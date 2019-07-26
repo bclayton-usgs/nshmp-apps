@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Subject, Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
-import { HazardResultsResponse } from '@nshmp/nshmp-web-utils';
+import { HazardResultsResponse, NshmpError } from '@nshmp/nshmp-web-utils';
+import { Subject, Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+import * as AWS from 'aws-sdk';
+import * as d3 from 'd3';
 
 import { HazardMapFormValues } from '../hazard-map-form-values.model';
 
@@ -11,39 +13,38 @@ import { HazardMapFormValues } from '../hazard-map-form-values.model';
 @Injectable({ providedIn: 'root' })
 export class HazardMapControlPanelService {
 
-  private constructor(private http: HttpClient) {}
-
-  private readonly AWS_URL = 'https://kqyga0ebwe.execute-api.us-west-2.amazonaws.com/nshmp/nshmp-haz-results';
+  private constructor() {}
 
   private plotMapEmitter = new Subject<HazardMapFormValues>();
-  // private dataTypeEmitter = new Subject<HazardMapPlotResult>();
+
+  private readonly S3 = new AWS.S3(AWS.config);
+
+  private readonly HAZ_RESULTS_BUCKET = 'nshmp-haz-lambda';
+  private readonly HAZ_RESULTS_KEY = 'nshmp-haz-aws-results-metadata.json';
 
   /**
-   * Returns the data type observable for when the data type select
-   * menu changes.
-   */
-  // dataTypeObserve(): Observable<HazardMapPlotResult> {
-  //   return this.dataTypeEmitter.asObservable();
-  // }
-
-  /**
-   * Send the result to the observers.
+   * Get a CSV file from S3.
    *
-   * @param result The hazard result
+   * @param request The S3 request
    */
-  // dataTypeNext(result: HazardMapPlotResult): void {
-  //   this.dataTypeEmitter.next(result);
-  // }
-
-  getCSVFile(url: string): Observable<string> {
-    return this.http.get(url, {responseType: 'text'});
+  getCSVFile(request: AWS.S3.GetObjectRequest): Observable<d3.DSVRowArray<string>> {
+    return this.getS3Object(request).pipe(map(body => {
+      return d3.csvParse(body.toString());
+    }));
   }
 
   /**
    * Returns the nshmp-haz results in S3.
    */
   getNshmpHazResults(): Observable<HazardResultsResponse> {
-    return this.http.get<HazardResultsResponse>(this.AWS_URL);
+    const request: AWS.S3.GetObjectRequest = {
+      Bucket: this.HAZ_RESULTS_BUCKET,
+      Key: this.HAZ_RESULTS_KEY
+    };
+
+    return this.getS3Object(request).pipe(map(body => {
+      return JSON.parse(body.toString()) as HazardResultsResponse;
+    }));
   }
 
   /**
@@ -61,6 +62,11 @@ export class HazardMapControlPanelService {
    */
   plotMapNext(formValues: HazardMapFormValues): void {
     this.plotMapEmitter.next(formValues);
+  }
+
+  private getS3Object(request: AWS.S3.GetObjectRequest): Observable<AWS.S3.Body> {
+    const promise = this.S3.getObject(request).promise();
+    return from(promise).pipe(map(result => result.Body));
   }
 
 }
