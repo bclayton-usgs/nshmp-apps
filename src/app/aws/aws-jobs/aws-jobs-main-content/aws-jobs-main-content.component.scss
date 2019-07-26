@@ -1,0 +1,19 @@
+
+:host {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.content-container {
+  width: 100%;
+  margin: auto;
+}
+
+mat-card {
+  margin: 2em;
+}
+
+.table-key {
+  padding-right: 1.5em !important;
+}

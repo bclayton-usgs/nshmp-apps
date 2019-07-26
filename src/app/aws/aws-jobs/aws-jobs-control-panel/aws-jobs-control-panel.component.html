@@ -1,0 +1,29 @@
+<!-- AWS jobs control panel -->
+<form
+    [formGroup]="awsFormGroup"
+    (ngSubmit)="onShowJobs()"
+    id="aws-form">
+
+  <!-- Form fields -->
+  <nshmp-template-form-field
+      [formGroup]="awsFormGroup"
+      [formFields]="awsFormFields">
+  </nshmp-template-form-field>
+
+</form>
+
+<!-- Buttons -->
+<div class="grid-row margin-y-2">
+
+  <!-- Plot map -->
+  <button
+      class="grid-col-4"
+      color="primary"
+      [disabled]="!awsFormGroup.valid"
+      form="aws-form"
+      mat-raised-button
+      type="submit">
+    Show Jobs
+  </button>
+</div>
+
