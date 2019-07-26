@@ -27,6 +27,7 @@ export class HazardMapPlotComponent implements OnInit, OnDestroy {
   private view: MapboxGLView;
   private map: MapboxGLPlot;
   private plotSubscription = new Subscription();
+  private clearMapSubscription = new Subscription();
 
   constructor(private plotService: HazardMapPlotService) { }
 
@@ -36,15 +37,19 @@ export class HazardMapPlotComponent implements OnInit, OnDestroy {
     this.plotSubscription = this.plotService.geoJsonObserve()
         .subscribe(results => this.plot(results),
         err => NshmpError.throwError(err));
+
+    this.clearMapSubscription = this.plotService.clearMapObserve()
+        .subscribe(() => this.map.clear())
   }
 
   ngOnDestroy() {
+    this.clearMapSubscription.unsubscribe();
     this.plotSubscription.unsubscribe();
   }
 
   plot(results: HazardMapPlotResults): void {
     this.view.setTitle(results.mapTitle);
-    this.map.plotMap(results.fc, results.propertyName);
+    this.map.plot(results.fc, results.propertyName);
     this.map.setLegendTitle(results.legendTitle);
   }
 
