@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HazardResultsResponse } from '@nshmp/nshmp-web-utils';
+import { HazardResultsResponse, NshmpError } from '@nshmp/nshmp-web-utils';
 import { Subject, Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import * as AWS from 'aws-sdk';
