@@ -10,6 +10,16 @@ export class HazardMapPlotService {
 
   private geoJsonEmitter = new Subject<HazardMapPlotResults>();
 
+  private clearMapEmitter = new Subject<void>();
+
+  clearMapObserve(): Observable<void> {
+    return this.clearMapEmitter.asObservable();
+  }
+
+  clearMapNext(): void {
+    this.clearMapEmitter.next();
+  }
+
   geoJsonObserve(): Observable<HazardMapPlotResults> {
     return this.geoJsonEmitter.asObservable();
   }
